@@ -6,7 +6,6 @@ env:
     REGION: us-east-1
     FRONTEND_REPO: three-tier-frontend
     BACKEND_REPO: three-tier-backend
-    IMAGE_TAG: v1.${CODEBUILD_BUILD_NUMBER}
     FRONTEND_DIR: Application-Code/frontend
     BACKEND_DIR: Application-Code/backend
     K8S_MANIFEST_DIR: Kubernetes-Manifests-file
@@ -25,6 +24,8 @@ phases:
 
   pre_build:
     commands:
+      - echo Setting dynamic image tag...
+      - export IMAGE_TAG=v1.${CODEBUILD_BUILD_NUMBER}
       - echo Logging in to Amazon ECR...
       - aws ecr get-login-password --region $REGION | docker login --username AWS --password-stdin ${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com
       - echo Installing frontend and backend dependencies...
@@ -65,5 +66,5 @@ artifacts:
 
 cache:
   paths:
-    - '$FRONTEND_DIR/node_modules/**/*'
-    - '$BACKEND_DIR/node_modules/**/*'
+    - 'Application-Code/frontend/node_modules/**/*'
+    - 'Application-Code/backend/node_modules/**/*'
