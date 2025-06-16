@@ -55,9 +55,10 @@ phases:
       - cp $K8S_MANIFEST_DIR/Database/*.yaml k8s-out/Database/
       - cp $K8S_MANIFEST_DIR/ingress.yaml k8s-out/
 
-      # 👇 Add these lines to place a copy of one deployment.yaml at the root if needed
-      - echo Creating root-level deployment.yaml for compatibility...
+      # ✅ Ensure required manifests are at root for CodePipeline deployment step
+      - echo Creating root-level deployment.yaml and service.yaml...
       - cp k8s-out/Frontend/deployment.yaml k8s-out/deployment.yaml
+      - cp k8s-out/Frontend/service.yaml k8s-out/service.yaml
 
 artifacts:
   base-directory: k8s-out
