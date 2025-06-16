@@ -9,10 +9,6 @@ env:
     FRONTEND_DIR: Application-Code/frontend
     BACKEND_DIR: Application-Code/backend
     K8S_MANIFEST_DIR: Kubernetes-Manifests-file
-  # Uncomment and configure if you are using AWS Secrets Manager
-  # secrets-manager:
-  #   DOCKER_USER: dockerhub:user
-  #   DOCKER_PASS: dockerhub:password
 
 phases:
   install:
@@ -58,6 +54,10 @@ phases:
       - mkdir -p k8s-out/Database
       - cp $K8S_MANIFEST_DIR/Database/*.yaml k8s-out/Database/
       - cp $K8S_MANIFEST_DIR/ingress.yaml k8s-out/
+
+      # 👇 Add these lines to place a copy of one deployment.yaml at the root if needed
+      - echo Creating root-level deployment.yaml for compatibility...
+      - cp k8s-out/Frontend/deployment.yaml k8s-out/deployment.yaml
 
 artifacts:
   base-directory: k8s-out
