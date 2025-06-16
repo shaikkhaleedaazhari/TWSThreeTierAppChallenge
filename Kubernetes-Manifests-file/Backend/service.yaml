@@ -3,7 +3,7 @@ kind: Service
 metadata:
   name: api
   namespace: three-tier
-spec: 
+spec:
   ports:
   - port: 3500
     protocol: TCP

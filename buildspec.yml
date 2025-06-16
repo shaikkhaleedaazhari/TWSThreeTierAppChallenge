@@ -1,0 +1,70 @@
+version: 0.2
+
+env:
+  variables:
+    ACCOUNT_ID: 235494811179
+    REGION: us-east-1
+    FRONTEND_REPO: three-tier-frontend
+    BACKEND_REPO: three-tier-backend
+    IMAGE_TAG: v1.${CODEBUILD_BUILD_NUMBER}
+    FRONTEND_DIR: Application-Code/Frontend
+    BACKEND_DIR: Application-Code/Backend
+    K8S_MANIFEST_DIR: Kubernetes-Manifests-file
+  # Uncomment and configure if you are using AWS Secrets Manager
+  # secrets-manager:
+  #   DOCKER_USER: dockerhub:user
+  #   DOCKER_PASS: dockerhub:password
+
+phases:
+  install:
+    runtime-versions:
+      nodejs: 18
+      docker: 20
+    commands:
+      - echo Installing utilities...
+      - yum install -y jq
+
+  pre_build:
+    commands:
+      - echo Logging in to Amazon ECR...
+      - aws ecr get-login-password --region $REGION | docker login --username AWS --password-stdin ${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com
+      - echo Installing frontend and backend dependencies...
+      - cd $FRONTEND_DIR && npm install && cd -
+      - cd $BACKEND_DIR && npm install && cd -
+
+  build:
+    commands:
+      - echo Building Docker images...
+      - docker build -t $FRONTEND_REPO:$IMAGE_TAG $FRONTEND_DIR
+      - docker tag $FRONTEND_REPO:$IMAGE_TAG ${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com/$FRONTEND_REPO:$IMAGE_TAG
+      - docker build -t $BACKEND_REPO:$IMAGE_TAG $BACKEND_DIR
+      - docker tag $BACKEND_REPO:$IMAGE_TAG ${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com/$BACKEND_REPO:$IMAGE_TAG
+
+  post_build:
+    commands:
+      - echo Pushing Docker images to ECR...
+      - docker push ${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com/$FRONTEND_REPO:$IMAGE_TAG
+      - docker push ${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com/$BACKEND_REPO:$IMAGE_TAG
+
+      - echo Replacing image placeholders in Kubernetes manifests...
+      - mkdir -p k8s-out/Frontend k8s-out/Backend
+      - sed "s|IMAGE_PLACEHOLDER|${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com/$FRONTEND_REPO:$IMAGE_TAG|g" $K8S_MANIFEST_DIR/Frontend/deployment.yaml > k8s-out/Frontend/deployment.yaml
+      - cp $K8S_MANIFEST_DIR/Frontend/service.yaml k8s-out/Frontend/service.yaml
+
+      - sed "s|IMAGE_PLACEHOLDER|${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com/$BACKEND_REPO:$IMAGE_TAG|g" $K8S_MANIFEST_DIR/Backend/deployment.yaml > k8s-out/Backend/deployment.yaml
+      - cp $K8S_MANIFEST_DIR/Backend/service.yaml k8s-out/Backend/service.yaml
+
+      - echo Including database and ingress manifests...
+      - mkdir -p k8s-out/Database
+      - cp $K8S_MANIFEST_DIR/Database/*.yaml k8s-out/Database/
+      - cp $K8S_MANIFEST_DIR/ingress.yaml k8s-out/
+
+artifacts:
+  base-directory: k8s-out
+  files:
+    - '**/*'
+
+cache:
+  paths:
+    - '$FRONTEND_DIR/node_modules/**/*'
+    - '$BACKEND_DIR/node_modules/**/*'
