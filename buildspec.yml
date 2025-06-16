@@ -7,8 +7,8 @@ env:
     FRONTEND_REPO: three-tier-frontend
     BACKEND_REPO: three-tier-backend
     IMAGE_TAG: v1.${CODEBUILD_BUILD_NUMBER}
-    FRONTEND_DIR: Application-Code/Frontend
-    BACKEND_DIR: Application-Code/Backend
+    FRONTEND_DIR: Application-Code/frontend
+    BACKEND_DIR: Application-Code/backend
     K8S_MANIFEST_DIR: Kubernetes-Manifests-file
   # Uncomment and configure if you are using AWS Secrets Manager
   # secrets-manager:
