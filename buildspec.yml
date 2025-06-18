@@ -50,20 +50,23 @@ phases:
       - sed "s|IMAGE_PLACEHOLDER|${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com/$BACKEND_REPO:$IMAGE_TAG|g" $K8S_MANIFEST_DIR/Backend/deployment.yaml > k8s-out/Backend/deployment.yaml
       - cp $K8S_MANIFEST_DIR/Backend/service.yaml k8s-out/Backend/service.yaml
 
-      - echo Including database and ingress manifests...
-      - mkdir -p k8s-out/Database
-      - cp $K8S_MANIFEST_DIR/Database/*.yaml k8s-out/Database/
-      - cp $K8S_MANIFEST_DIR/ingress.yaml k8s-out/
+      - cp $K8S_MANIFEST_DIR/Database/deployment.yaml k8s-out/database-deployment.yaml || true
+      - cp $K8S_MANIFEST_DIR/Database/service.yaml k8s-out/database-service.yaml || true
+      - cp $K8S_MANIFEST_DIR/Database/secrets.yaml k8s-out/database-secrets.yaml || true
 
-      # ✅ Ensure required manifests are at root for CodePipeline deployment step
-      - echo Creating root-level deployment.yaml and service.yaml...
-      - cp k8s-out/Frontend/deployment.yaml k8s-out/deployment.yaml
-      - cp k8s-out/Frontend/service.yaml k8s-out/service.yaml
+
+      # --- INGRESS ---
+      - cp $K8S_MANIFEST_DIR/ingress.yaml k8s-out/ingress.yaml || true
+
+      # --- DEBUG ---
+      - echo "Final list of generated Kubernetes YAML files:"
+      - find k8s-out/
 
 artifacts:
   base-directory: k8s-out
+  discard-paths: yes
   files:
-    - '**/*'
+    - '**/*.yaml'
 
 cache:
   paths:
